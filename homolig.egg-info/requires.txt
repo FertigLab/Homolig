@@ -1,7 +1,0 @@
-Bio
-anndata
-more_itertools
-numpy
-pandas
-scipy
-tqdm
