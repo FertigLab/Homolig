@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
 ## To Do
 
--   Add tests folder
+- See full checklist tsv file. 
 
 ## Citation
 
