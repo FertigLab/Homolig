@@ -81,6 +81,13 @@ def _check_format(df, species, chains):
         else:
             df = df[~df['TRAV'].isin(ref['imgt'])]
     print('Removed ', init - df.shape[0], 'rows not in IMGT format!')
+
+    # Make Homolig ID column, which is guaranteed to be a string.
+    # prevents ImplicitModificationWarning converting to AnnData later. AAG
+    lst = range(df.shape[0])
+    lst = [format(x,'d') for x in lst]
+    df['Homolig.ID'] = ['H'+ s for s in lst ]
+    df = df.set_index('Homolig.ID')
     return df
 
 def _get_matrix(metric):
@@ -198,13 +205,23 @@ def _get_cdrs(fasta_filename):
             #    continue
 
             # translate nt sequence
+            # - only attempt if nt is in-frame. AAG
             nt_sequence = str(sequence.seq)
             cdr1_nt = nt_sequence[CDR1_START:CDR1_END].replace('.', '')
             cdr2_nt = nt_sequence[CDR2_START:CDR2_END].replace('.', '')
             cdr25_nt = nt_sequence[CDR25_START:CDR25_END].replace('.', '')
-            cdr1_aa = translate(cdr1_nt)
-            cdr2_aa = translate(cdr2_nt)
-            cdr25_aa = translate(cdr25_nt)
+            if len(cdr1_nt) % 3 == 0:
+                cdr1_aa = translate(cdr1_nt)
+            else:
+                cdr1_aa = '*'
+            if len(cdr2_nt) % 3 == 0:
+                cdr2_aa = translate(cdr2_nt)
+            else:
+                 cdr2_aa = '*'
+            if len(cdr25_nt) %3 == 0:
+                cdr25_aa = translate(cdr25_nt)
+            else:
+                cdr25_aa = '*'
             fasta_with_cdrs.append(vals[:8] + [cdr1_aa] + [cdr2_aa] + [cdr25_aa])
             vgene_df = pd.DataFrame(fasta_with_cdrs)
             vgene_df.rename(columns={vgene_df.columns[1]: 'V', vgene_df.columns[-3]: 'CDR1', 
@@ -343,15 +360,16 @@ def _tcr_paired(input_file, metric, df, score_matrix, germline_scores):
     print('merging dictionaries') 
     # combining key and value lists
     all_scores = germline_scores + cdr3a_scores + cdr3b_scores
-    print(all_scores)
-    print(df)
+
     filename = os.path.splitext(input_file)[0] + "_paired_tcr.h5ad"
     adata = ad.AnnData(all_scores, obs=df, dtype='float32')
     adata.write(filename)
     return adata
 
-def _tcr_alpha(df, score_matrix, germline_scores, input_file,  metric): 
+def _tcr_alpha(df, score_matrix, germline_scores, input_file,  metric):
+    print('scoring CDR3a')
     cdr3a_scores = _score_chunks(df, 'CDR3.alpha.aa', score_matrix)
+    print('merging dictionaries')
     # combining key and value lists
     all_scores = germline_scores + cdr3a_scores
     filename = os.path.splitext(input_file)[0] + "_alpha_tcr.h5ad"
@@ -361,7 +379,9 @@ def _tcr_alpha(df, score_matrix, germline_scores, input_file,  metric):
 
 
 def _tcr_beta(df, score_matrix, germline_scores, input_file, metric):
+    print('scoring CDR3b')
     cdr3b_scores = _score_chunks(df, 'CDR3.beta.aa', score_matrix)
+    print('merging dictionaries')
     # combining key and value lists
     all_scores = germline_scores + cdr3b_scores
     #all_scores = all_scores.reshape(len(df), len(df))
@@ -375,6 +395,12 @@ def _seq(input_file, metric):
     # read in input file 
     df = pd.read_csv(input_file, dtype='category')
     df = df.astype(str)
+    # Make Homolig ID column, which is guaranteed to be a string.
+    # prevents ImplicitModificationWarning converting to AnnData later. AAG
+    lst = range(df.shape[0])
+    lst = [format(x, 'd') for x in lst]
+    df['Homolig.ID'] = ['H' + s for s in lst]
+    df = df.set_index('Homolig.ID')
     # read in score matrix
     score_matrix = _get_matrix(metric)
     seq_scores = _score_chunks(df, 'sequence', score_matrix)
@@ -399,23 +425,27 @@ def _prep_bcr(input_file, seq_type, chains, metric, species):
     igk_df = _get_cdrs(igk)
     
     igv_df = pd.concat([igh_df, igl_df, igk_df])
-    igv_df.to_csv('igv_test.csv')
     # get score dictionaries for _trv cdrs
     igv_aligned, germline_dict = _vgene_msa(df, igv_df, seq_type, chains, metric, score_matrix)
     
     return df, igv_aligned, score_matrix, germline_dict 
 
 def _bcr_paired(input_file, metric, df, score_matrix, germline_scores):
+    print('scoring CDR3l')
     cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix)
-    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix) 
+    print('scoring CDR3h')
+    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix)
+    print('merging dictionaries')
     all_scores = germline_scores + cdr3l_scores + cdr3h_scores
     filename = os.path.splitext(input_file)[0] + "_paired_bcr.h5ad"
     adata = ad.AnnData(all_scores, obs=df, dtype='float32')
     adata.write(filename)
     return adata
 
-def _bcr_light(df, score_matrix, germline_scores, input_file,  metric): 
+def _bcr_light(df, score_matrix, germline_scores, input_file,  metric):
+    print('scoring CDR3l')
     cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix)
+    print('merging dictionaries')
     # arrays of scores
     all_scores = germline_scores + cdr3l_scores
     filename = os.path.splitext(input_file)[0] + "_light_bcr.h5ad"
@@ -424,7 +454,9 @@ def _bcr_light(df, score_matrix, germline_scores, input_file,  metric):
     return adata
 
 def _bcr_heavy(df, score_matrix, germline_scores, input_file, metric):
+    print('scoring CDR3h')
     cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix)
+    print('merging dictionaries')
     all_scores = germline_scores + cdr3h_scores
     # arrays of scores
     filename = os.path.splitext(input_file)[0] + "_heavy_bcr.h5ad"

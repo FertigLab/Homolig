@@ -1,0 +1,4 @@
+#ignore local machine build-related files. 
+build/
+homolig.egg-info/
+

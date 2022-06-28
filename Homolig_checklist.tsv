@@ -1,0 +1,13 @@
+PLANNED UPDATES TO HOMOLIG 				COMPLETED	PRIORITY LEVEL		DESC
+Alex Girgis June 2022				N	1	Generate wrapper function 	
+				N	1	Specify desired output directory	
+				N	1	Normalize output matrix to max magnitude of 1	
+				N	2	Permit output argument as .csv file 	
+				N	2	Add 'Verbose' argument to wrapper function 	
+				N	1	Solve alpha TCR problem. Does not  appear to run	
+				N	3	Collapse _prep_bcr and _prep_tcr functions into one 	
+				N	3	"Collapse _tcr_alpha, _tcr_beta, _bcr_light, _bcr_heavy into one function "	
+				N	3	Collapse _bcr_paired and _tcr_paired into one function 	
+				N	3	Comprehensive test case script	
+				N	4	Permit user-specified cdr weighting scheme 	
+				N	5	Incorporate Theron C++ score functions	
