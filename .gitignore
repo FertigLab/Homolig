@@ -1,4 +1,5 @@
 #ignore local machine build-related files. 
 build/
 homolig.egg-info/
+homolig/data/test_data/speed_sample_data
 
