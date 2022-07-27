@@ -10,9 +10,12 @@ import sys
 from shutil import rmtree
 from glob import glob
 from pathlib import Path
-
 from setuptools import find_packages, setup, Command
-
+try:
+    from pybind11.setup_helpers import Pybind11Extension
+except ImportError:
+    from setuptools import Extension as Pybind11Extension
+    
 def glob_fix(package_name, glob):
     # this assumes setup.py lives in the folder that contains the package
     package_path = Path(f'./{package_name}').resolve()
@@ -32,7 +35,7 @@ VERSION = '0.1.0'
 REQUIRED = [
      # os, sys, and itertools are modules included with Python and should not be listed
      'numpy', 'pandas', 'more_itertools',
-     'Bio', 'anndata', 'tqdm', 'scipy'
+     'Bio', 'anndata', 'tqdm', 'scipy','pybind11>=2.2'
 ]
 
 # What packages are optional?
@@ -96,6 +99,33 @@ class UploadCommand(Command):
 
         sys.exit()
 
+class get_pybind_include(object):
+    """Helper class to determine the pybind11 include path
+    The purpose of this class is to postpone importing pybind11
+    until it is actually installed, so that the ``get_include()``
+    method can be invoked. """
+
+    def __init__(self, user=False):
+        self.user = user
+
+    def __str__(self):
+        import pybind11
+        return pybind11.get_include(self.user)
+
+ext_modules = [
+    Pybind11Extension(
+        "homoligcpp",
+        ['homoligcpp/aamatrix.cpp',
+        'homoligcpp/aavector.cpp',
+        'homoligcpp/homolig.cpp',
+        'homoligcpp/homolig_bind.cpp'],
+        include_dirs=[
+            get_pybind_include(),
+            get_pybind_include(user=True),
+            'homoligcpp/'
+        ],
+        language="c++"),
+]
 
 # Where the magic happens:
 setup(
@@ -134,4 +164,6 @@ setup(
     cmdclass={
         'upload': UploadCommand,
     },
+    ext_modules=ext_modules,
+    setup_requires=['pybind11>=2.2']
 )

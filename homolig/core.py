@@ -12,6 +12,7 @@ from multiprocessing import Pool
 from multiprocessing import cpu_count
 from scipy import sparse
 from homolig import substitution_matrices
+import homoligcpp as homoligcpp
 
 import pkg_resources
 DATA_PATH = pkg_resources.resource_filename('homolig', 'data/')
@@ -143,35 +144,21 @@ def _score_pairwise(aln_list, key_list, score_matrix):
 #    for first in iterator:
 #        yield itertools.chain([first], itertools.islice(iterator, chunk_size - 1))
 
-def _score_chunks(df, column, score_matrix, chunk_size=200):
+def _score_chunks(df, column, score_matrix, metric, chunk_size=200):
     # get list of unique sequences 
     #df = df.drop_duplicates(subset=[column])
     #seq_list = df[column].tolist()
     seq_list = df[column].values
-    #print(seq_list)
-    # all possible sequence pairs, upper triangle
-    #seq_pairs = list(itertools.combinations_with_replacement(seq_list, 2)) # with diagonal
     seq_pairs = list(itertools.combinations(seq_list, 2)) # no diagonal
-    seq_chunks = [seq_pairs[i:i + chunk_size] for i in range(0, len(seq_pairs), chunk_size)]
-    #print(seq_chunks)
-    zip_args = list(zip(seq_chunks, seq_chunks))
-    chunk_args = [x + (score_matrix,) for x in zip_args]
-    with Pool(cpu_count()) as pool:
-        chunk_scores = pool.starmap(_score_pairwise, chunk_args)
-    '''
-    # precompute blocks as list to have total number of blocks for progressbar
-    chunk_scores = process_map(
-        score_pairwise,
-        *zip(*chunk_args),
-        max_workers = os.cpu_count(),
-        chunksize = chunk_size,
-        tqdm_class = tqdm,
-        total = sum(1 for e in seq_chunks))
-        #total = len(list(key_chunks)))
-    # flatten list of lists
-    ''' 
-    #score = zip(*chain.from_iterable(chunk_scores))
-    score = list(itertools.chain(*chunk_scores))
+    AA1_sequences, AA2_sequences = map(list,zip(*seq_pairs))
+    # seq_chunks = [seq_pairs[i:i + chunk_size] for i in range(0, len(seq_pairs), chunk_size)]
+    # zip_args = list(zip(seq_chunks, seq_chunks))
+    # chunk_args = [x + (score_matrix,) for x in zip_args]
+    # with Pool(cpu_count()) as pool:
+    #     chunk_scores = pool.starmap(_score_pairwise, chunk_args)
+
+    # score = list(itertools.chain(*chunk_scores))
+    score_cpp = list(homoligcpp.homolig(DATA_PATH+"align_matrices/"+metric.upper(),  homoligcpp.VectorString(AA1_sequences), homoligcpp.VectorString(AA2_sequences)))
     # build upper triangle and fill with scores 
     tri = np.zeros((len(seq_list),len(seq_list)))
     tri[np.triu_indices(len(seq_list), 1)] = score
@@ -231,14 +218,14 @@ def _get_cdrs(fasta_filename):
             #vgene_df.to_csv('trv_fasta_cdrs.csv')
     return vgene_df
 
-def _cdr_score(df, c1, c2, c25, score_matrix):
+def _cdr_score(df, c1, c2, c25, score_matrix, metric):
     # score trv regions
-    cdr1_scores = _score_chunks(df, c1, score_matrix)
+    cdr1_scores = _score_chunks(df, c1, score_matrix, metric)
     cdr1_scores = cdr1_scores*0.333
-    cdr2_scores = _score_chunks(df, c2, score_matrix)
+    cdr2_scores = _score_chunks(df, c2, score_matrix, metric)
     # combine weighted cdr1 and cdr2 score to keep memory usage down
     cdr2_scores = cdr2_scores*0.333 + cdr1_scores
-    cdr25_scores = _score_chunks(df, c25, score_matrix)
+    cdr25_scores = _score_chunks(df, c25, score_matrix, metric)
     # multiply arrays by 1/3 to scale V gene sequences
     cdr25_scores = cdr2_scores + cdr25_scores*0.333
     return cdr25_scores
@@ -246,26 +233,26 @@ def _cdr_score(df, c1, c2, c25, score_matrix):
 def _vgene_msa(df, ref, seq_type, chains, metric, score_matrix):
     if seq_type == 'tcr' and chains == 'beta':
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['TRBV'], right_on= ['V'], how = 'left')
-        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix)
+        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix, metric)
  
     if seq_type == 'tcr' and chains == 'alpha':
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['TRAV'], right_on= ['V'], how = 'left')
-        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix)
+        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix, metric)
 
     if seq_type == 'bcr' and chains == 'heavy':
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['IGHV'], right_on= ['V'], how = 'left')
-        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix)
+        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix, metric)
     if seq_type == 'bcr' and chains == 'light':
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['IGLV'], right_on= ['V'], how = 'left')
-        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix)
+        vgene_score = _cdr_score(df, 'CDR1', 'CDR2', 'CDR2.5', score_matrix, metric)
 
     if seq_type == 'tcr' and chains == 'paired':
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['TRBV'], right_on= ['V'], how = 'left')
         df.rename(columns={'CDR1':'CDR1b', 'CDR2':'CDR2b', 'CDR2.5':'CDR2.5b'}, inplace=True)
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['TRAV'], right_on= ['V'], how = 'left')
         df.rename(columns={'CDR1':'CDR1a', 'CDR2':'CDR2a', 'CDR2.5':'CDR2.5a'}, inplace=True)
-        alpha_score = _cdr_score(df, 'CDR1a', 'CDR2a', 'CDR2.5a', score_matrix)
-        beta_score = _cdr_score(df, 'CDR1b', 'CDR2b', 'CDR2.5b', score_matrix)
+        alpha_score = _cdr_score(df, 'CDR1a', 'CDR2a', 'CDR2.5a', score_matrix, metric)
+        beta_score = _cdr_score(df, 'CDR1b', 'CDR2b', 'CDR2.5b', score_matrix, metric)
         vgene_score = alpha_score + beta_score
 
     if seq_type == 'bcr' and chains == 'paired':
@@ -273,8 +260,8 @@ def _vgene_msa(df, ref, seq_type, chains, metric, score_matrix):
         df.rename(columns={'CDR1':'CDR1b', 'CDR2':'CDR2b', 'CDR2.5':'CDR2.5b'}, inplace=True)
         df = pd.merge(df, ref[['V','CDR1','CDR2','CDR2.5']], left_on=  ['IGLV'], right_on= ['V'], how = 'left')
         df.rename(columns={'CDR1':'CDR1a', 'CDR2':'CDR2a', 'CDR2.5':'CDR2.5a'}, inplace=True)
-        alpha_score = _cdr_score(df, 'CDR1a', 'CDR2a', 'CDR2.5a', score_matrix)
-        beta_score = _cdr_score(df, 'CDR1b', 'CDR2b', 'CDR2.5b', score_matrix)
+        alpha_score = _cdr_score(df, 'CDR1a', 'CDR2a', 'CDR2.5a', score_matrix, metric)
+        beta_score = _cdr_score(df, 'CDR1b', 'CDR2b', 'CDR2.5b', score_matrix, metric)
         vgene_score = alpha_score + beta_score
 
     #print('vgene array', len(vgene_score)) 
@@ -354,9 +341,9 @@ def _prep_tcr(input_file, seq_type, chains, metric, species):
 
 def _tcr_paired(input_file, metric, df, score_matrix, germline_scores):
     print('scoring CDR3a')
-    cdr3a_scores = _score_chunks(df, 'CDR3.alpha.aa', score_matrix)
+    cdr3a_scores = _score_chunks(df, 'CDR3.alpha.aa', score_matrix, metric)
     print('scoring CDR3b')
-    cdr3b_scores = _score_chunks(df, 'CDR3.beta.aa', score_matrix)
+    cdr3b_scores = _score_chunks(df, 'CDR3.beta.aa', score_matrix, metric)
     print('merging dictionaries') 
     # combining key and value lists
     all_scores = germline_scores + cdr3a_scores + cdr3b_scores
@@ -368,7 +355,7 @@ def _tcr_paired(input_file, metric, df, score_matrix, germline_scores):
 
 def _tcr_alpha(df, score_matrix, germline_scores, input_file,  metric):
     print('scoring CDR3a')
-    cdr3a_scores = _score_chunks(df, 'CDR3.alpha.aa', score_matrix)
+    cdr3a_scores = _score_chunks(df, 'CDR3.alpha.aa', score_matrix, metric)
     print('merging dictionaries')
     # combining key and value lists
     all_scores = germline_scores + cdr3a_scores
@@ -380,7 +367,7 @@ def _tcr_alpha(df, score_matrix, germline_scores, input_file,  metric):
 
 def _tcr_beta(df, score_matrix, germline_scores, input_file, metric):
     print('scoring CDR3b')
-    cdr3b_scores = _score_chunks(df, 'CDR3.beta.aa', score_matrix)
+    cdr3b_scores = _score_chunks(df, 'CDR3.beta.aa', score_matrix, metric)
     print('merging dictionaries')
     # combining key and value lists
     all_scores = germline_scores + cdr3b_scores
@@ -403,7 +390,7 @@ def _seq(input_file, metric):
     df = df.set_index('Homolig.ID')
     # read in score matrix
     score_matrix = _get_matrix(metric)
-    seq_scores = _score_chunks(df, 'sequence', score_matrix)
+    seq_scores = _score_chunks(df, 'sequence', score_matrix, metric)
     filename = os.path.splitext(input_file)[0] + "_sequence.h5ad"
     adata = ad.AnnData(seq_scores, obs=df, dtype='float32')
     adata.write(filename)
@@ -432,9 +419,9 @@ def _prep_bcr(input_file, seq_type, chains, metric, species):
 
 def _bcr_paired(input_file, metric, df, score_matrix, germline_scores):
     print('scoring CDR3l')
-    cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix)
+    cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix, metric)
     print('scoring CDR3h')
-    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix)
+    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix, metric)
     print('merging dictionaries')
     all_scores = germline_scores + cdr3l_scores + cdr3h_scores
     filename = os.path.splitext(input_file)[0] + "_paired_bcr.h5ad"
@@ -444,7 +431,7 @@ def _bcr_paired(input_file, metric, df, score_matrix, germline_scores):
 
 def _bcr_light(df, score_matrix, germline_scores, input_file,  metric):
     print('scoring CDR3l')
-    cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix)
+    cdr3l_scores = _score_chunks(df, 'CDR3.light.aa', score_matrix, metric)
     print('merging dictionaries')
     # arrays of scores
     all_scores = germline_scores + cdr3l_scores
@@ -455,7 +442,7 @@ def _bcr_light(df, score_matrix, germline_scores, input_file,  metric):
 
 def _bcr_heavy(df, score_matrix, germline_scores, input_file, metric):
     print('scoring CDR3h')
-    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix)
+    cdr3h_scores = _score_chunks(df, 'CDR3.heavy.aa', score_matrix, metric)
     print('merging dictionaries')
     all_scores = germline_scores + cdr3h_scores
     # arrays of scores

@@ -1,0 +1,5 @@
+/mnt/f/Homolig/homoligcpp/CMakeFiles/homoligcpp.dir
+/mnt/f/Homolig/homoligcpp/CMakeFiles/edit_cache.dir
+/mnt/f/Homolig/homoligcpp/CMakeFiles/rebuild_cache.dir
+/mnt/f/Homolig/homoligcpp/pybind11/CMakeFiles/edit_cache.dir
+/mnt/f/Homolig/homoligcpp/pybind11/CMakeFiles/rebuild_cache.dir
