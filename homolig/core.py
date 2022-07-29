@@ -161,7 +161,7 @@ def _score_chunks(df, column, score_matrix, metric, chunk_size=200):
     score_cpp = list(homoligcpp.homolig(DATA_PATH+"align_matrices/"+metric.upper(),  homoligcpp.VectorString(AA1_sequences), homoligcpp.VectorString(AA2_sequences)))
     # build upper triangle and fill with scores 
     tri = np.zeros((len(seq_list),len(seq_list)))
-    tri[np.triu_indices(len(seq_list), 1)] = score
+    tri[np.triu_indices(len(seq_list), 1)] = score_cpp
     # add transpose of upper triangle
     tri = tri + tri.T
     # fill diagonal with 1 

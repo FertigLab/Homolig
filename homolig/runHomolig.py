@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#/usr/bin/env python
 
+import os
 import sys
-import core as homolig
+import homolig as homolig
 from optparse import OptionParser
-
-print("Current version of Python is ", sys.version)
+import time
 
 def main(options):
     input_file=options.input_file
@@ -17,7 +17,7 @@ def main(options):
                                   chains, 
                                   metric, 
                                   species)
-    print(homolig_out.to_df())
+    
 if __name__ == '__main__':
     
     parser = OptionParser()

@@ -4,4 +4,4 @@ chains=paired
 metric=aadist
 species=human
 
-./runHomolig.py -i $input_file -s $seq_type -c $chains -m $metric -p $species
+python runHomolig.py -i $input_file -s $seq_type -c $chains -m $metric -p $species
