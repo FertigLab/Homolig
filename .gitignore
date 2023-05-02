@@ -2,4 +2,5 @@
 build/
 homolig.egg-info/
 homolig/data/test_data/speed_sample_data
-
+homolig/__pycache__/
+.eggs/

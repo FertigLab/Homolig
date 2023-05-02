@@ -53,12 +53,14 @@ def _species_lookup(species):
 def _check_format(df, species, chains,verbose):
     # map any V genes that can be converted to IMGT.
     # If any additional pairs come up, they can be added to mapper.csv
-    mapper = pd.read_csv(DATA_PATH + '/mapper.csv')
+    mapper = pd.read_csv(DATA_PATH + 'mapper.csv')
     mapper = mapper[mapper['species'] == species]
-    ref = pd.read_csv(DATA_PATH + '/imgt_genedb_full.csv')
-    ref = ref[ref['species'] == species]
+    ref = pd.read_csv(DATA_PATH + 'imgt_genedb_full.csv')
+    ref = ref[ref['species'] == 'Homo sapiens'] #CHANGE THIS PRIOR TO FINAL VERSION
+   # ref = ref[ref['species'] == species]
 
     di = mapper.set_index('v')['imgt'].to_dict()
+
     df = df.replace({'TRBV': di, 'TRAV': di, 'IGHV': di, 'IGLV': di})
     # remove any rows with V genes that are still not in IMGT format
     # these are likely pseudogenes or oddly formatted seqs that haven't been
@@ -67,21 +69,21 @@ def _check_format(df, species, chains,verbose):
     init = df.shape[0]
     if (chains == 'paired'):
         if ('IGHV' and 'IGLV' in df.columns):
-            df = df[~df['IGHV'].isin(ref['imgt'])]
-            df = df[~df['IGLV'].isin(ref['imgt'])]
+            df = df[df['IGHV'].isin(ref['imgt'])]
+            df = df[df['IGLV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRBV'].isin(ref['imgt'])]
-            df = df[~df['TRAV'].isin(ref['imgt'])]
+            df = df[df['TRBV'].isin(ref['imgt'])]
+            df = df[df['TRAV'].isin(ref['imgt'])]
     if (chains == 'beta' or chains == 'heavy'):
         if ('IGHV' in df.columns):
-            df = df[~df['IGHV'].isin(ref['imgt'])]
+            df = df[df['IGHV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRBV'].isin(ref['imgt'])]
+            df = df[df['TRBV'].isin(ref['imgt'])]
     if (chains == 'alpha' or chains == 'light'):
         if ('IGLV' in df.columns):
-            df = df[~df['IGLV'].isin(ref['imgt'])]
+            df = df[df['IGLV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRAV'].isin(ref['imgt'])]
+            df = df[df['TRAV'].isin(ref['imgt'])]
     print_update('Removed ' + str(init - df.shape[0]) + ' rows not in IMGT format!', verbose)
     return df
 def _score_chunks(df, column, metric, mode = 'pairwise', group_column = 'group'):
@@ -217,7 +219,6 @@ def _vgene_msa(df, ref, seq_type, chains, metric,mode = 'pairwise', group_column
     #print('vgene array', len(vgene_score)) 
     return df, vgene_score
 def _prep_tcr(df, seq_type, chains, metric, species, mode = 'pairwise', group_column = 'group', save_germline=False):
-    species = _species_lookup(species)
    # get cdr1, cdr2, cdr2.5 sequences from trv names
     tra = DATA_PATH + 'fastas/' + species + '/TR/TRAV.fasta'
     trb = DATA_PATH + 'fastas/' + species + '/TR/TRBV.fasta'
@@ -253,10 +254,17 @@ def _consolidate_input(df, colnames,verbose):
         pasted = pasted + df[colnames[l]].astype(str)
 
     pasted = pasted.tolist()
+    #If not present already, add a 'Count' column in data.
+    #Column must be prenamed to exactly 'Counts' to be recognized.
+    #Using pre-defined counts assumes sequences are already unique, or else that the provided
+    #counts are the sum of all non-unique sequences already.
+    if 'Count' not in df.columns:
+        counts = [pasted.count(x) for x in pasted]
+        df['Count'] = counts
+
     unique_indices = sorted([pasted.index(x) for x in set(pasted)])
-
     collapsed = df[colnames].iloc[unique_indices,:]
-
+    collapsed['Count'] = df['Count'].iloc[unique_indices]
     # Make Homolig ID column, which is guaranteed to be a string.
     # prevents ImplicitModificationWarning converting to AnnData later.
     lst = range(collapsed.shape[0])
@@ -265,13 +273,13 @@ def _consolidate_input(df, colnames,verbose):
 
     n_removed = df.shape[0] - collapsed.shape[0]
     print_update('Removed '+ str(n_removed) + ' non-unique sequences!', verbose)
+    print_update(str(collapsed.shape[0]) + ' sequences remaining.', verbose)
 
     return collapsed
 def _prep_input(input_file, seq_type, chains, metric, species, mode, verbose, group_column = 'group'):
     # read in input file
     df = pd.read_csv(input_file, dtype='category')
     df = _check_format(df, species, chains,verbose)
-    species = _species_lookup(species)
 
     #Collapse input to only include relevant columns and unique sequences.
     if seq_type == 'bcr':
@@ -294,11 +302,14 @@ def _prep_input(input_file, seq_type, chains, metric, species, mode, verbose, gr
     df['Homolig.ID'] = df.index
     return df
 def _make_output(data, df, mode = 'pairwise', group_column = 'group'):
+    df.Count = [int(i) for i in df.Count]
     if mode == 'pairwise':
         adata = ad.AnnData(data, obs = df, dtype = 'float32')
     if mode == 'axb':
         groups = sorted(list(set(df[group_column])))
-        adata = ad.AnnData(data, obs = df[df[group_column] == groups[0]], var = df[df[group_column] == groups[1]], dtype = 'float32')
+        obs_df = df[df[group_column] == groups[0]]
+        var_df =  df[df[group_column] == groups[1]]
+        adata = ad.AnnData(data, obs = obs_df, var = var_df, dtype = 'float32')
     return adata
 def _default_output_filename(input_file, seq_type, chains, mode = 'pairwise'):
     #Return the appropriate default output file name for anndata object.
@@ -364,6 +375,8 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
     valid_modes = ['pairwise', 'axb']
     if seq_type not in valid_seq_types:
         raise ValueError('Not valid sequence type')
+    if seq_type == 'seq':
+        chains = None
     if chains not in valid_chains:
         raise ValueError('Not valid chain type')
     # if metric not in valid_metrics:
@@ -373,9 +386,13 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
     if mode not in valid_modes:
         raise ValueError('Not valid mode')
 
+    #Convert species to latin before continuing: database files are annotated this way.
+    #This is needlessly complex and should be fixed eventually.
+    species = _species_lookup(species)
     #Consolidate input prior to continuing.
     if mode == 'pairwise':
-         df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+        group_column = 'group'#placeholder dummy variable to pass into sub-functions.
+        df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
     #If axb mode, load second input file and concatenate into one input.
     if mode == 'axb':
         print_update('Processing input 1:',verbose)
@@ -413,7 +430,7 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
 
     elif seq_type == 'seq':
         print_update('scoring sequences', verbose)
-        seq_scores = _score_chunks(df, 'sequence', metric, mode, group_column)
+        seq_scores = _score_chunks(df, 'seq', metric, mode, group_column)
         adata = _make_output(seq_scores, df, mode, group_column)
 
     elif seq_type == 'bcr':
@@ -447,6 +464,12 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
         germ_file = output_file[:-5] + '_germline.h5ad'
         adata_germ = _make_output(germline_scores, df, mode=mode)
         adata_germ.write(germ_file)
+
+        for cdr3dat in ['cdr3b_scores', 'cdr3a_scores', 'cdr3h_scores', 'cdr3l_scores']:
+            if cdr3dat in locals():
+                adata_cdr3 = _make_output(locals()[cdr3dat], df, mode = mode)
+                cdr3_file = output_file[:-5] + '_' + cdr3dat[:-7] + '.h5ad'
+                adata_cdr3.write(cdr3_file)
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     print('[' + now + ']','Homolig completed.')

@@ -39,7 +39,8 @@ if args.mode is None:
     args.mode = 'pairwise'
 if args.save_germline is None:
     args.save_germline = False
-
+if args.verbose is None:
+    args.verbose = False
 #No problem if args.input2 or output is None, so will not check.
 
 
