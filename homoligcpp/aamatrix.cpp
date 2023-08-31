@@ -79,19 +79,18 @@ float aamatrix::get_alignment(std::string AA1_string,std::string AA2_string){
             aavector alignment_vector;
             std::string AA1_kmer = AA1_kmers[i];
             std::string AA2_kmer = AA2_kmers[j];
-            if (AA1_kmer == AA2_kmer){
-                MAX_SCORE=1;
-            } else {
-                for (std::size_t k=0; k<MIN_SIZE; k++){
-                    alignment_vector.add(get_val(std::string(1,AA1_kmer[k]),std::string(1,AA2_kmer[k])));
-                }
-                float align_val = alignment_vector.getSum()/MAX_SIZE;
-                if (align_val>MAX_SCORE){
-                    MAX_SCORE=align_val;
-                }
+   
+            for (std::size_t k=0; k<MIN_SIZE; k++){
+            	alignment_vector.add(get_val(std::string(1,AA1_kmer[k]),std::string(1,AA2_kmer[k])));
             }
+            float align_val = alignment_vector.getSum()/MAX_SIZE;
+            if (align_val>MAX_SCORE){
+            	MAX_SCORE=align_val;
+                }
         }
+        
     }
+    
     return(MAX_SCORE);
 }
 // int aamatrix::check_mat(){

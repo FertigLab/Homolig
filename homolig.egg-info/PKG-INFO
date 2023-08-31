@@ -6,6 +6,7 @@ Home-page: https://github.com/edavis71/homolig
 Author: Emily Marcisak
 Author-email: edavis71@jhu.edu
 License: MIT
+Platform: UNKNOWN
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 3
@@ -95,3 +96,5 @@ feature requests, or help requests using the issue tracker.
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
+

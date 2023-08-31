@@ -1,8 +1,8 @@
-numpy
-pandas
-more_itertools
 Bio
 anndata
-tqdm
-scipy
+more_itertools
+numpy
+pandas
 pybind11>=2.2
+scipy
+tqdm

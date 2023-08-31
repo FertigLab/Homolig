@@ -18,6 +18,7 @@ parser.add_argument('-i2', '--input2', help = "Second sequence group with which 
 parser.add_argument('-o', '--output',  help = "Desired output file path/filename. Defaults to input file directory.")
 parser.add_argument('-v', '--verbose', help= "Specify verbosity during execution.")
 parser.add_argument('-g', '--save_germline', help= 'Save CDR alignments separately during execution.')
+parser.add_argument('-si', '--save_reformatted_input', help= 'Save input file after renaming V genes (may be useful in post-analysis).')
 #Read arguments from command line.
 args = parser.parse_args()
 
@@ -41,6 +42,8 @@ if args.save_germline is None:
     args.save_germline = False
 if args.verbose is None:
     args.verbose = False
+if args.save_reformatted_input is None: 
+    args.save_reformatted_input = False
 #No problem if args.input2 or output is None, so will not check.
 
 
@@ -67,7 +70,8 @@ def main():
         input2= args.input2,
         output_file= args.output,
         verbose= args.verbose,
-        save_germline = args.save_germline
+        save_germline = args.save_germline, 
+        save_reformatted_input = args.save_reformatted_input
                        )
 
 if __name__ == '__main__':

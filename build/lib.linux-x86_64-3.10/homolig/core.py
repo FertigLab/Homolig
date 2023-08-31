@@ -50,40 +50,54 @@ def _species_lookup(species):
                  'zebrafish':'Danio_rerio'}
 
     return species_dict[species]
-def _check_format(df, species, chains,verbose):
+def _check_format(df, species, chains,verbose, print_invalid_genes = False):
     # map any V genes that can be converted to IMGT.
     # If any additional pairs come up, they can be added to mapper.csv
-    mapper = pd.read_csv(DATA_PATH + '/mapper.csv')
+    mapper = pd.read_csv(DATA_PATH + 'mapper.csv')
     mapper = mapper[mapper['species'] == species]
-    ref = pd.read_csv(DATA_PATH + '/imgt_genedb_full.csv')
-    ref = ref[ref['species'] == species]
+    ref = pd.read_csv(DATA_PATH + 'imgt_genedb_full.csv')
+    ref = ref[ref['species'] == 'Homo sapiens'] #CHANGE THIS PRIOR TO FINAL VERSION
+   # ref = ref[ref['species'] == species]
 
     di = mapper.set_index('v')['imgt'].to_dict()
+
     df = df.replace({'TRBV': di, 'TRAV': di, 'IGHV': di, 'IGLV': di})
+    orig_df = df
     # remove any rows with V genes that are still not in IMGT format
     # these are likely pseudogenes or oddly formatted seqs that haven't been
     # added to the mapper file
 
     init = df.shape[0]
+
     if (chains == 'paired'):
         if ('IGHV' and 'IGLV' in df.columns):
-            df = df[~df['IGHV'].isin(ref['imgt'])]
-            df = df[~df['IGLV'].isin(ref['imgt'])]
+            notIn = df['IGHV'][df['IGHV'].isin(ref['imgt']) == False].unique().tolist()
+            notIn = notIn + df['IGLV'][df['IGLV'].isin(ref['imgt']) == False].unique().tolist()
+            df = df[df['IGHV'].isin(ref['imgt'])]
+            df = df[df['IGLV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRBV'].isin(ref['imgt'])]
-            df = df[~df['TRAV'].isin(ref['imgt'])]
+            notIn = df['TRBV'][df['TRBV'].isin(ref['imgt']) == False].unique().tolist()
+            notIn = notIn + df['TRAV'][df['TRAV'].isin(ref['imgt']) == False].unique().tolist()
+            df = df[df['TRBV'].isin(ref['imgt'])]
+            df = df[df['TRAV'].isin(ref['imgt'])]
     if (chains == 'beta' or chains == 'heavy'):
         if ('IGHV' in df.columns):
-            df = df[~df['IGHV'].isin(ref['imgt'])]
+            df = df[df['IGHV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRBV'].isin(ref['imgt'])]
+            notIn = df['TRBV'][df['TRBV'].isin(ref['imgt']) == False].astype('string').unique()
+            df = df[df['TRBV'].isin(ref['imgt'])]
     if (chains == 'alpha' or chains == 'light'):
         if ('IGLV' in df.columns):
-            df = df[~df['IGLV'].isin(ref['imgt'])]
+            notIn = df['IGLV'][df['IGLV'].isin(ref['imgt']) == False].unique().tolist()
+            df = df[df['IGLV'].isin(ref['imgt'])]
         else:
-            df = df[~df['TRAV'].isin(ref['imgt'])]
+            notIn = df['TRAV'][df['TRAV'].isin(ref['imgt']) == False].unique().tolist()
+            df = df[df['TRAV'].isin(ref['imgt'])]
     print_update('Removed ' + str(init - df.shape[0]) + ' rows not in IMGT format!', verbose)
-    return df
+    if(print_invalid_genes):
+        n = '; '.join([str(i) for i in notIn])
+        print_update('Unrecognized genes: ' + n, verbose)
+    return df, orig_df
 def _score_chunks(df, column, metric, mode = 'pairwise', group_column = 'group'):
     # Generate sequence pairs
     seq_list = df[column].values
@@ -103,7 +117,7 @@ def _score_chunks(df, column, metric, mode = 'pairwise', group_column = 'group')
     #Execute scoring
     AA1_sequences, AA2_sequences = map(list,zip(*seq_pairs))
     score_cpp = list(homoligcpp.homolig(DATA_PATH+"align_matrices/"+metric.upper(),  homoligcpp.VectorString(AA1_sequences), homoligcpp.VectorString(AA2_sequences)))
-
+    score_cpp_diag = list(homoligcpp.homolig(DATA_PATH+"align_matrices/"+metric.upper(),  homoligcpp.VectorString(seq_list), homoligcpp.VectorString(seq_list)))
     #Format output matrix
     if mode == 'pairwise':
         # build upper triangle and fill with scores
@@ -112,7 +126,7 @@ def _score_chunks(df, column, metric, mode = 'pairwise', group_column = 'group')
         # add transpose of upper triangle
         tri = tri + tri.T
         # fill diagonal with 1
-        np.fill_diagonal(tri,1)
+        np.fill_diagonal(tri,score_cpp_diag)
         score_mat = sparse.csr_matrix(tri)
     if mode == 'axb':
         score_mat = np.reshape(score_cpp, (len(dim1_labs), len(dim2_labs)) )
@@ -217,7 +231,6 @@ def _vgene_msa(df, ref, seq_type, chains, metric,mode = 'pairwise', group_column
     #print('vgene array', len(vgene_score)) 
     return df, vgene_score
 def _prep_tcr(df, seq_type, chains, metric, species, mode = 'pairwise', group_column = 'group', save_germline=False):
-    species = _species_lookup(species)
    # get cdr1, cdr2, cdr2.5 sequences from trv names
     tra = DATA_PATH + 'fastas/' + species + '/TR/TRAV.fasta'
     trb = DATA_PATH + 'fastas/' + species + '/TR/TRBV.fasta'
@@ -275,11 +288,10 @@ def _consolidate_input(df, colnames,verbose):
     print_update(str(collapsed.shape[0]) + ' sequences remaining.', verbose)
 
     return collapsed
-def _prep_input(input_file, seq_type, chains, metric, species, mode, verbose, group_column = 'group'):
+def _prep_input(input_file, seq_type, chains, metric, species, mode, verbose, group_column = 'group', print_invalid_genes = False):
     # read in input file
     df = pd.read_csv(input_file, dtype='category')
-    df = _check_format(df, species, chains,verbose)
-    species = _species_lookup(species)
+    df, orig_df = _check_format(df, species, chains, verbose, print_invalid_genes=print_invalid_genes)
 
     #Collapse input to only include relevant columns and unique sequences.
     if seq_type == 'bcr':
@@ -300,13 +312,16 @@ def _prep_input(input_file, seq_type, chains, metric, species, mode, verbose, gr
         df = _consolidate_input(df, ['seq'],verbose)
 
     df['Homolig.ID'] = df.index
-    return df
+    return df, orig_df
 def _make_output(data, df, mode = 'pairwise', group_column = 'group'):
+    df.Count = [int(i) for i in df.Count]
     if mode == 'pairwise':
         adata = ad.AnnData(data, obs = df, dtype = 'float32')
     if mode == 'axb':
         groups = sorted(list(set(df[group_column])))
-        adata = ad.AnnData(data, obs = df[df[group_column] == groups[0]], var = df[df[group_column] == groups[1]], dtype = 'float32')
+        obs_df = df[df[group_column] == groups[0]]
+        var_df =  df[df[group_column] == groups[1]]
+        adata = ad.AnnData(data, obs = obs_df, var = var_df, dtype = 'float32')
     return adata
 def _default_output_filename(input_file, seq_type, chains, mode = 'pairwise'):
     #Return the appropriate default output file name for anndata object.
@@ -339,17 +354,19 @@ def print_update(message, verbose):
     if verbose:
         now = strftime("%Y-%m-%d %H:%M:%S", localtime())
         print('[' + now + ']', message)
-def homolig(input_file, seq_type, chains=None, metric='aadist', species='human', mode='pairwise', input2 = None,
-            output_file = None, verbose = False, save_germline = False):
+
+def homolig_format_checker(input_file, seq_type, chains=None, metric='aadist', species='human', mode='pairwise', input2 = None,
+            output_file = None, verbose = True, save_germline = False, save_reformatted_input = False):
     # Print start-up message
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-    print('[' + now + ']', 'Homolig version 0.1')  # Find a way to add __version__ attribute to package at later date.
+    print('[' + now + ']', 'Homolig version 0.1 Format Checker')  # Find a way to add __version__ attribute to package at later date.
     print('                         input_file: ', input_file)
     print('                           seq_type: ', seq_type)
     print('                             chains: ', chains)
     print('                             metric: ', metric)
     print('                            species: ', species)
     print('                               mode: ', mode)
+    print('                            verbose: ', verbose)
     if(mode == 'axb'):
         print('                             input2:', input2)
     if output_file is None:
@@ -357,7 +374,10 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
     print('                             output: ', output_file)
     if save_germline:
         print('                      save_germline:', save_germline)
-    print('                            verbose: ', verbose)
+
+    if save_reformatted_input:
+        print('             save_reformatted_input:', save_reformatted_input)
+
 
     valid_seq_types = ['tcr', 'bcr', 'seq']
     valid_chains = ['alpha', 'beta', 'paired', 'light', 'heavy', None]
@@ -372,6 +392,8 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
     valid_modes = ['pairwise', 'axb']
     if seq_type not in valid_seq_types:
         raise ValueError('Not valid sequence type')
+    if seq_type == 'seq':
+        chains = None
     if chains not in valid_chains:
         raise ValueError('Not valid chain type')
     # if metric not in valid_metrics:
@@ -381,15 +403,95 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
     if mode not in valid_modes:
         raise ValueError('Not valid mode')
 
+    #Convert species to latin before continuing: database files are annotated this way.
+    #This is needlessly complex and should be fixed eventually.
+    species = _species_lookup(species)
     #Consolidate input prior to continuing.
     if mode == 'pairwise':
-         df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+        group_column = 'group'#placeholder dummy variable to pass into sub-functions.
+        df, orig_df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose, print_invalid_genes=True)
     #If axb mode, load second input file and concatenate into one input.
     if mode == 'axb':
         print_update('Processing input 1:',verbose)
-        df = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+        df, orig_df = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose, print_invalid_genes=True)
         print_update('Processing input 2:',verbose)
-        df2 = _prep_input(input2, seq_type, chains, metric, species, mode,verbose)
+        df2, orig_df2 = _prep_input(input2, seq_type, chains, metric, species, mode,verbose, print_invalid_genes=True)
+        df['group'] = 'a'
+        df2['group'] = 'b'
+        df = pd.concat([df,df2])
+        orig_df = pd.concat[orig_df, orig_df2]
+        lst = range(df.shape[0])
+        lst = [format(x, 'd') for x in lst]
+        df['Homolig.ID'] = ['H' + s for s in lst]
+
+    if save_reformatted_input:
+        reformatted_input_file = output_file[:-5] + '_reformatted-input.csv'
+        orig_df.to_csv(reformatted_input_file, index=False)
+        abridged_input_file = output_file[:-5] + '_abridged-input.csv'
+        df.to_csv(abridged_input_file, index = False)
+
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    print('[' + now + ']','Homolig Format Checker completed.')
+    return 0
+def homolig(input_file, seq_type, chains=None, metric='aadist', species='human', mode='pairwise', input2 = None,
+            output_file=None, verbose=False, save_germline=False, save_reformatted_input=False):
+    # Print start-up message
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    print('[' + now + ']', 'Homolig version 0.1')  # Find a way to add __version__ attribute to package at later date.
+    print('                         input_file: ', input_file)
+    print('                           seq_type: ', seq_type)
+    print('                             chains: ', chains)
+    print('                             metric: ', metric)
+    print('                            species: ', species)
+    print('                               mode: ', mode)
+    print('                            verbose: ', verbose)
+    if(mode == 'axb'):
+        print('                             input2:', input2)
+    if output_file is None:
+        output_file = _default_output_filename(input_file, seq_type, chains, mode)
+    print('                             output: ', output_file)
+    if save_germline:
+        print('                      save_germline:', save_germline)
+    if save_reformatted_input:
+        print('             save_reformatted_input:', save_reformatted_input)
+
+    valid_seq_types = ['tcr', 'bcr', 'seq']
+    valid_chains = ['alpha', 'beta', 'paired', 'light', 'heavy', None]
+    valid_metrics = ['aadist', 'aadist_euc', 'blosum62']
+    valid_species = ['human', 'mouse', 'mas-night-monkey', 'rhesus-monkey',
+                     'alpaca', 'bovine', 'camel', 'catfish', 'chicken', 'chondrichthyes'
+                                                                        'cod', 'crab-eating-macaque', 'dog', 'dolphin',
+                     'ferret',
+                     'goat', 'gorilla', 'horse', 'naked-mole-rat',
+                     'nonhuman-primates', 'pig', 'platypus', 'rabbit', 'rat',
+                     'salmon', 'sheep', 'teleostei', 'trout', 'zebrafish']
+    valid_modes = ['pairwise', 'axb']
+    if seq_type not in valid_seq_types:
+        raise ValueError('Not valid sequence type')
+    if seq_type == 'seq':
+        chains = None
+    if chains not in valid_chains:
+        raise ValueError('Not valid chain type')
+    # if metric not in valid_metrics:
+    #    raise ValueError('Not valid sequence type')
+    if species not in valid_species:
+        raise ValueError('Not valid species type')
+    if mode not in valid_modes:
+        raise ValueError('Not valid mode')
+
+    #Convert species to latin before continuing: database files are annotated this way.
+    #This is needlessly complex and should be fixed eventually.
+    species = _species_lookup(species)
+    #Consolidate input prior to continuing.
+    if mode == 'pairwise':
+        group_column = 'group'#placeholder dummy variable to pass into sub-functions.
+        df, orig_df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+    #If axb mode, load second input file and concatenate into one input.
+    if mode == 'axb':
+        print_update('Processing input 1:',verbose)
+        df, orig_df = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+        print_update('Processing input 2:',verbose)
+        df2, orig_df2 = _prep_input(input2, seq_type, chains, metric, species, mode,verbose)
         df['group'] = 'a'
         df2['group'] = 'b'
         df = pd.concat([df,df2])
@@ -421,7 +523,7 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
 
     elif seq_type == 'seq':
         print_update('scoring sequences', verbose)
-        seq_scores = _score_chunks(df, 'sequence', metric, mode, group_column)
+        seq_scores = _score_chunks(df, 'seq', metric, mode, group_column)
         adata = _make_output(seq_scores, df, mode, group_column)
 
     elif seq_type == 'bcr':
@@ -461,6 +563,9 @@ def homolig(input_file, seq_type, chains=None, metric='aadist', species='human',
                 adata_cdr3 = _make_output(locals()[cdr3dat], df, mode = mode)
                 cdr3_file = output_file[:-5] + '_' + cdr3dat[:-7] + '.h5ad'
                 adata_cdr3.write(cdr3_file)
+    if save_reformatted_input:
+        reformatted_input_file = output_file[:-5] + '_reformatted-input.csv'
+        orig_df.to_csv(reformatted_input_file, index=False)
 
     now = strftime("%Y-%m-%d %H:%M:%S", localtime())
     print('[' + now + ']','Homolig completed.')
