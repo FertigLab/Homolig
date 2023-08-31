@@ -1,3 +1,0 @@
-[submodule "homolig/homoligcpp/pybind11"]
-	path = homolig/homoligcpp/pybind11
-	url = https://github.com/pybind/pybind11.git

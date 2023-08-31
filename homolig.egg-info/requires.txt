@@ -1,0 +1,8 @@
+numpy
+pandas
+more_itertools
+Bio
+anndata
+tqdm
+scipy
+pybind11>=2.2

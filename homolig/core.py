@@ -342,6 +342,76 @@ def print_update(message, verbose):
     if verbose:
         now = strftime("%Y-%m-%d %H:%M:%S", localtime())
         print('[' + now + ']', message)
+
+def homolig_format_checker(input_file, seq_type, chains=None, metric='aadist', species='human', mode='pairwise', input2 = None,
+            output_file = None, verbose = False, save_germline = False):
+    # Print start-up message
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    print('[' + now + ']', 'Homolig version 0.1 Format Checker')  # Find a way to add __version__ attribute to package at later date.
+    print('                         input_file: ', input_file)
+    print('                           seq_type: ', seq_type)
+    print('                             chains: ', chains)
+    print('                             metric: ', metric)
+    print('                            species: ', species)
+    print('                               mode: ', mode)
+    if(mode == 'axb'):
+        print('                             input2:', input2)
+    if output_file is None:
+        output_file = _default_output_filename(input_file, seq_type, chains, mode)
+    print('                             output: ', output_file)
+    if save_germline:
+        print('                      save_germline:', save_germline)
+    print('                            verbose: ', verbose)
+
+    valid_seq_types = ['tcr', 'bcr', 'seq']
+    valid_chains = ['alpha', 'beta', 'paired', 'light', 'heavy', None]
+    valid_metrics = ['aadist', 'aadist_euc', 'blosum62']
+    valid_species = ['human', 'mouse', 'mas-night-monkey', 'rhesus-monkey',
+                     'alpaca', 'bovine', 'camel', 'catfish', 'chicken', 'chondrichthyes'
+                                                                        'cod', 'crab-eating-macaque', 'dog', 'dolphin',
+                     'ferret',
+                     'goat', 'gorilla', 'horse', 'naked-mole-rat',
+                     'nonhuman-primates', 'pig', 'platypus', 'rabbit', 'rat',
+                     'salmon', 'sheep', 'teleostei', 'trout', 'zebrafish']
+    valid_modes = ['pairwise', 'axb']
+    if seq_type not in valid_seq_types:
+        raise ValueError('Not valid sequence type')
+    if seq_type == 'seq':
+        chains = None
+    if chains not in valid_chains:
+        raise ValueError('Not valid chain type')
+    # if metric not in valid_metrics:
+    #    raise ValueError('Not valid sequence type')
+    if species not in valid_species:
+        raise ValueError('Not valid species type')
+    if mode not in valid_modes:
+        raise ValueError('Not valid mode')
+
+    #Convert species to latin before continuing: database files are annotated this way.
+    #This is needlessly complex and should be fixed eventually.
+    species = _species_lookup(species)
+    #Consolidate input prior to continuing.
+    if mode == 'pairwise':
+        group_column = 'group'#placeholder dummy variable to pass into sub-functions.
+        df  = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+    #If axb mode, load second input file and concatenate into one input.
+    if mode == 'axb':
+        print_update('Processing input 1:',verbose)
+        df = _prep_input(input_file, seq_type, chains, metric, species, mode,verbose)
+        print_update('Processing input 2:',verbose)
+        df2 = _prep_input(input2, seq_type, chains, metric, species, mode,verbose)
+        df['group'] = 'a'
+        df2['group'] = 'b'
+        df = pd.concat([df,df2])
+        lst = range(df.shape[0])
+        lst = [format(x, 'd') for x in lst]
+        df['Homolig.ID'] = ['H' + s for s in lst]
+
+
+
+    now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+    print('[' + now + ']','Homolig Format Checker completed.')
+    return 0
 def homolig(input_file, seq_type, chains=None, metric='aadist', species='human', mode='pairwise', input2 = None,
             output_file = None, verbose = False, save_germline = False):
     # Print start-up message
