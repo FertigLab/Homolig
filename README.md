@@ -2,7 +2,9 @@
 ## What is Homolig?
 
 Homolig is a python package to physiochemically compare immune receptor and
-epitope sequences.
+epitope sequences. There are two modules:
+(1) Compute pairwise sequence distance between sequences / Assign Clusters / Write UMAP
+(2) Generate descriptive statistics on physiochemical properties of selected sequences. 
 
 <!-- GETTING STARTED -->
 ## Getting Started
@@ -38,8 +40,8 @@ For cases where paired alpha and beta chain information is available:
 | --- | --- |  --- | --- |
 | CASSAGTSPTDTQYF | TRBV6-4*01 | CAVMDSSYKLIF | TRAV1-2*01 |
 
-### Basic Usage
-Recommended usage is through the wrapper homolig_wrapper.py, located in ./homolig/. 
+### Basic Usage: Pairwise Distances
+Recommended usage for Module 1: Pairwise distances is through the wrapper homolig_wrapper.py, located in ./homolig/. 
 ```python
 python3 $WRAPPERDIR/homolig_wrapper.py  -h
 usage: homolig_wrapper.py [-h] [-i INPUT] [-s SEQ] [-c CHAINS] [-m METRIC] [-sp SPECIES] [-mode MODE] [-i2 INPUT2] [-o OUTPUT] [-v VERBOSE]
@@ -103,6 +105,9 @@ options:
   -o OUTPUT, --output OUTPUT
                         Desired output file path/filename. Defaults to input file directory.
 ```
+### Basic Usage: Descriptive Module 
+Functions to describe the physiochemical properties of arbitrary sequence groups are written in R. 
+Please see functions in ./homolig/_rcode/score-sequences.r for test data and an example in commented lines. 
 
 ## Citation
 
