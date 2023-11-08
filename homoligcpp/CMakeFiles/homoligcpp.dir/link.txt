@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -flto -shared  -o homoligcpp.cpython-39-x86_64-linux-gnu.so CMakeFiles/homoligcpp.dir/aamatrix.cpp.o CMakeFiles/homoligcpp.dir/aavector.cpp.o CMakeFiles/homoligcpp.dir/homolig.cpp.o CMakeFiles/homoligcpp.dir/homolig_bind.cpp.o 
