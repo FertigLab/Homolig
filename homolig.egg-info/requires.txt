@@ -1,8 +1,0 @@
-Bio
-anndata
-more_itertools
-numpy
-pandas
-pybind11>=2.2
-scipy
-tqdm
