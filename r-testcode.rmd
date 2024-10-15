@@ -1,0 +1,116 @@
+---
+title: "Homolig Characterization Module: Tutorial"
+output:
+html_document:
+df_print: paged
+---
+  
+```{r, setup, include=FALSE}
+knitr::opts_knit$set(root.dir =  '/home/aag7319/Homolig/')
+library(ggplot2)
+library(ggprism)
+library(scales)
+library(reshape2)
+library(dplyr)
+library(msa)
+library(ggpubr)
+library(mutoss)
+library(ggseqlogo)
+library(parallel)
+```
+
+Load the Homolig sequence characterization functions. 
+```{r}
+source('./homolig/_rcode/score-sequences.r')
+```
+
+Generate some test cases of arbitrary sequences. Input A and B are both sets of 100 15mers. Both have random uniform distribution of amino acids, except for position 5 in input A, which is one of Q/Y/F, or position 10 in inputB which is one of S/T. 
+```{r, makeTestData}
+#Functions to generate Test sequences 
+makeSeqs <- function(L, N, from = NA, probs = NA){
+  if(all(is.na(from))){
+    from = c("A", "R", "N", "D" ,"C" ,"Q" ,"E" ,"G" ,
+             "H" ,"I" ,"L" ,"K" ,"M" ,"F", "P" ,"S" ,
+             "T" ,"W" ,"Y" ,"V")
+  }
+  
+  seqs = vector(mode = 'character', length = N)
+  tempfun = function(input){
+    if(all(is.na(probs))) return(paste0(sample(from, size = L, replace = TRUE), collapse = ''))
+    return(paste0(sample(from, size = L, replace = TRUE, prob = probs), collapse = ''))
+  }
+  
+  seqs = unlist( lapply(seqs,tempfun))
+  return(seqs)
+}
+replaceNthPosition <- function(seqs, position, replaceOptions){
+  substr(seqs, position, position) <- sample(replaceOptions, length(seqs), replace = TRUE)
+  return(seqs)
+}
+#TEST DATA-------------------------------------------
+makeSeqs <- function(l,N){
+  #l = length sequences
+  #N = number sequences
+  mat = readMatrix2('nmf')
+  aas = rownames(mat)
+  seqs = vector(mode = 'character', length = N)
+  seqs = unlist(lapply(seqs, FUN = function(x){
+    return(paste0(sample(aas, l, replace = TRUE), collapse = ''))}))
+  return(seqs)
+}
+replaceNthPosition <- function(seqs, position, replaceOptions){
+  substr(seqs, position, position) <- sample(replaceOptions, length(seqs), replace = TRUE)
+  return(seqs)
+}
+
+inputA <- makeSeqs(15, 1e3)
+inputB <- makeSeqs(15,1e3)
+
+
+inputA <- replaceNthPosition(inputA, 5, c('Q', 'Y', 'F'))
+inputB <- replaceNthPosition(inputB, 10, c('S', 'T'))
+inputs.ab = list(GrA = inputA, GrB = inputB)
+```
+
+The below chunk calculates the average factor score across sets of sequences. The 'metric' argument can accept the following: atchley, kidera, nmf (coGAPS patterns), ica, or ensemble. All factor scores are scaled (mean = 0, sd = 1) according to a uniform distribution across all 20 amino acids. 
+```{r}
+per.seq = AverageSeqScores(inputA, metric = 'atchley')
+print(head(per.seq))
+score.summary = AverageScoreReport(inputA, metric = 'atchley')
+print(score.summary)
+
+```
+
+Now let's measure Atchley factors at each position. As anticipated, inputA does not significantly differ from the uniform distribution except at position 5. At this position, the only Atchley factors 3 and 4 are impacted. 
+```{r}
+out = ScorePatterns3(inputA, metric = 'atchley', interpolate_distance = 15)
+plot(out$ggall + labs(title = 'All Factors'))
+plot(out$ggfacet + labs(title = 'By Factor'))
+```
+
+Similarly, we can measure properties in inputB. This time, let's look at the Kidera factors. At position 10, the manipulated position, we notice significant differences in a variety of factors. 
+```{r}
+out = ScorePatterns3(inputB, metric = 'kidera', interpolate_distance = 15)
+plot(out$ggall + labs(title = 'All Factors'))
+plot(out$ggfacet + labs(title = 'By Factor'))
+
+```
+
+Rather than compare inputs A and B against the uniform distribution, let's compare these sequences to one another. Instead of using either the Kidera or Atchley factors, let's use our new 'Ensemble' factor set. This is in fact the default. As anticipated, we see that all significant differences between these groups of sequences are at positions 5 or 10 (the manipulated positions).
+
+```{r}
+comp =  ComparePatternScores2(inputs.ab, metric = 'ensemble', pattern_names = NA, interpolate_distance = 15)
+print(comp)
+```
+
+To take a closer look at the top five hits in the above table, let us make some plots.
+```{r}
+PlotPatternScoreComparison2(inputs.ab, metric = 'ensemble', pattern_names = NA, interpolate_distance = 15,Factors = head(comp$Factor), Positions = head(comp$Position))
+```
+
+
+
+
+```{r, sessionInfo}
+print(sessionInfo())
+```
