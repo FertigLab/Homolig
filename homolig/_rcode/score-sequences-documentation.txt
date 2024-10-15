@@ -1,0 +1,33 @@
+ScorePatterns3 <- function(input, metric = 'nmf', error = 'se', pattern_names = NA,
+                           interpolate_distance = NA, plotSig = TRUE)
+
+AverageScoreReport <- function(input, metric = 'ensemble', error = 'se', pattern_names = NA)                           
+
+ScoreLogos <- function(input, metric = 'nmf')
+
+process_logo <- function(sequence_info, metric = 'nmf')
+
+readMatrix2 <- function(metric)
+
+
+PlotPatternScores <- function(pattern_score_data, error = 'se', plotSig = TRUE, ALPHA = 0.10)
+
+PlotWholePatternScores <- function(inputs, metric = 'nmf', error = 'se', GroupFactor = NA, GroupCols = NA)
+
+GetPatternScores2 <- function(input, metric = 'ensemble', ALPHA = 0.1, pattern_names = NA, interpolate_distance = NA)
+
+GetWholePatternScores <- function(input, metric = 'nmf', ALPHA = 0.1, pattern_names = NA)
+
+ComputeInterpolationWeights <- function(orig_len = 5, final_len = 3)
+
+ComparePatternScores2 <- function(inputs, metric = 'ensemble', ALPHA = 0.1, pattern_names = NA, interpolate_distance = NA)
+
+CompareWholePatternScores <-  function(inputs, metric = 'ensemble', ALPHA = 0.1, pattern_names = NA, interpolate_distance = NA)
+
+PlotPatternScoreComparison2 <- function(inputs, metric = 'ensemble', Factors, Positions, pattern_names = NA, GroupFactor = NA, GroupCols = NA)
+
+GetPatternPValues <- function(pattern_score_data, aa_matrix, ALPHA = 0.10)
+
+AverageSeqScores <- function(input, metric = 'ensemble')
+
+makeSubstitutionMatrix <- function(pmat)
