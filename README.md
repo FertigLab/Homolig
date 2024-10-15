@@ -19,17 +19,18 @@ need for cloning.)
 ```bash
 git clone https://github.com/FertigLab/Homolig
 ```
-2. Pip install
+2. Activate a pre-made virtual environment with all homolig dependencies pre-installed (optional, but recommended): 
+```bash
+cd Homolig 
+source ./homolig-venv/bin/activate
+```
+3. Pip install
 ```bash
 cd Homolig 
 python3 -m pip install .
 ```
 
-This repository also includes a virtual environment which may be activated instead of globally installing Homolig: 
-```bash
-cd Homolig 
-source ./homolig-venv/bin/activate
-```
+
 
 You should now be able to import homolig within python. Alternatively, you may call a wrapper script from the terminal as shown below (recommended). 
 
