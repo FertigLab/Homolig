@@ -114,7 +114,7 @@ options:
 ```
 ### Basic Usage: Descriptive Module 
 Functions to describe the physiochemical properties of arbitrary sequence groups are written in R. 
-Please see functions in ./homolig/_rcode/score-sequences.r for test data and an example in commented lines. 
+Please see functions in ./homolig/_rcode/score-sequences.r. For a walkthrough of basic usage see testcode-r-characterization-module.rmd. 
 
 ## Citation
 
