@@ -28,14 +28,14 @@ DESCRIPTION = 'My short description for my project.'
 URL = 'https://github.com/edavis71/homolig'
 EMAIL = 'edavis71@jhu.edu'
 AUTHOR = 'Emily Marcisak'
-REQUIRES_PYTHON = '>=3.8.0'
+REQUIRES_PYTHON = '>=3.8.0, <3.13.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
      # os, sys, and itertools are modules included with Python and should not be listed
-     'numpy', 'pandas', 'more_itertools',
-     'Bio', 'anndata', 'tqdm', 'scipy','pybind11>=2.2'
+     'numpy', 'pandas', 'more_itertools', 'Bio', 'anndata', 'tqdm', 'scipy',
+     'pybind11>=2.2','scikit-learn'
 ]
 
 # What packages are optional?
@@ -124,7 +124,8 @@ ext_modules = [
             get_pybind_include(user=True),
             'homoligcpp/'
         ],
-        language="c++"),
+        language="c++",
+        cxx_std=17),
 ]
 
 # Where the magic happens:

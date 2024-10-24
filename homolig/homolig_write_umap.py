@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 from sklearn.decomposition import TruncatedSVD
 from scipy.sparse import csr_matrix
 import argparse
-import scanpy as sc
+from anndata import read_h5ad
 import pandas as pd
 import numpy as np
 import umap
@@ -22,7 +22,7 @@ args.input = args.input.replace("'", "")
 args.output = args.output.replace("'", "")
 
 #Read inputs and calculate UMAP============
-adata = sc.read_h5ad(args.input)
+adata = read_h5ad(args.input)
 
 nComp = min(100, adata.shape[0]) #not totally positive if shape[0] is the correct dimension here.
 svd = TruncatedSVD(n_components=nComp, n_iter=7, random_state=42)
