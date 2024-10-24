@@ -2,7 +2,7 @@
 import argparse
 from time import localtime, strftime
 import pandas as pd
-import scanpy as sc
+from anndata import read_h5ad
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
@@ -36,7 +36,7 @@ print('                        output_file: ', outfile)
 print('                          save_meta: ', saveMeta)
 
 
-adata = sc.read_h5ad(infile)
+adata = read_h5ad(infile)
 
 if adata.var.shape[1] > 0: #If we used axb mode to generate input, and input contains both var and obs pd DFs
     mat = pd.DataFrame(adata.X)
