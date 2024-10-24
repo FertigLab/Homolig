@@ -34,32 +34,23 @@
   Failed to build homolig biopython
   ERROR: ERROR: Failed to build installable wheels for some pyproject.toml based projects (homolig, biopython)
   ```
-- remove venv, add requirements.txt (I think its's cleaner to gen this from inside the docker)
-- scanpy and scikit-learn are missing from dependencies -> add to setup.py
+- DONE remove venv, add requirements.txt (I think its's cleaner to gen this from inside the docker)
+- DONE scanpy and scikit-learn are missing from dependencies -> add to setup.py
 
 # running
-- fix path that causes 
+- fix
 ```
 root@39dd7c8e5b11:/homolig# bash testcode-python-clustering-module.sh 
 python3: can't open file '/homolig/./homolig/homolig_format_checker.py ': [Errno 2] No such file or directory
 testcode-python-clustering-module.sh: line 24: -i: command not found
 ```
-- fix anndata futurewarnings
+- fix 
 ```
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_csv from `anndata` is deprecated. Import anndata.io.read_csv instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_excel from `anndata` is deprecated. Import anndata.io.read_excel instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_hdf from `anndata` is deprecated. Import anndata.io.read_hdf instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_loom from `anndata` is deprecated. Import anndata.io.read_loom instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_mtx from `anndata` is deprecated. Import anndata.io.read_mtx instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_text from `anndata` is deprecated. Import anndata.io.read_text instead.
-  warnings.warn(msg, FutureWarning)
-/usr/local/lib/python3.11/site-packages/anndata-0.11.0rc3-py3.11.egg/anndata/utils.py:429: FutureWarning: Importing read_umi_tools from `anndata` is deprecated. Import anndata.io.read_umi_tools instead.
-  warnings.warn(msg, FutureWarning)
+[2024-10-24 17:43:12] Homolig clustering completed.
+Traceback (most recent call last):
+  File "/Users/dlvovs1/Documents/jhu/Homolig/./homolig/homolig_write_umap.py", line 9, in <module>
+    import umap
+ModuleNotFoundError: No module named 'umap'
 ```
 
 # documentation
@@ -73,6 +64,7 @@ testcode-python-clustering-module.sh: line 24: -i: command not found
 - add tests - no `tests/` directory found
 
 # misc
+
  - cleaning misc files in the `/homolig`:
  ```
  (homolig) dlvovs1@Dmitrijss-MacBook-Pro Homolig % ls homolig | grep cluster
@@ -82,3 +74,7 @@ clusterHomolig.v3.py
 clusterHomolig.v4.py
 ```
 - OPTIONAL simplifying, there is R, cpp, and python in this tool, are all of them really needed?
+
+# final
+
+- remove this file
