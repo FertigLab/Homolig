@@ -9,7 +9,7 @@ from time import localtime, strftime
 import warnings
 warnings.filterwarnings("ignore")
 
-import scanpy as sc
+from anndata import read_h5ad
 import pandas as pd
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
@@ -47,7 +47,7 @@ print('                       num_clusters: ', C)
 
 #Execute clustering!--------------------------------------------------------------
 
-adata = sc.read_h5ad(inputfile)
+adata = read_h5ad(inputfile)
 
 x = np.asarray(adata.X.todense())
 
