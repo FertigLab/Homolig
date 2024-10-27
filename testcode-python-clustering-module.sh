@@ -19,7 +19,7 @@
 ####Process paired-chain viral TCR data
 
 
-python3 ./homolig/homolig_format_checker.py\ 
+python3 ./homolig/homolig_format_checker.py \
 		-i ./test-data/TCR-paired-test_viral.csv\
 		--seq tcr \
 		--chains paired \
@@ -89,7 +89,7 @@ python3	./homolig/h5ad_to_csv.py \
 	
 	
 ####Process single-chain IGH data
-python3 ./homolig/homolig_format_checker.py\
+python3 ./homolig/homolig_format_checker.py \
 		-i ./test-data/IGH-test_D1-M_0_BRR_D1-M-001.csv\
 		--seq bcr \
 		--chains heavy \
