@@ -30,7 +30,7 @@ metafile = outfile[:-4] + '_sequence_info.csv'
 
 
 now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-print('[' + now + ']', 'Homolig version 0.2 Write Matrix to CSV')  # Find a way to add __version__ attribute to package at later date.
+print('[' + now + ']', 'Homolig version 1.0 Write Matrix to CSV')  # Find a way to add __version__ attribute to package at later date.
 print('                         input_file: ', infile)
 print('                        output_file: ', outfile)
 print('                          save_meta: ', saveMeta)

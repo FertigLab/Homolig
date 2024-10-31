@@ -6,7 +6,7 @@ df_print: paged
 ---
   
 ```{r, setup, include=FALSE}
-knitr::opts_knit$set(root.dir =  '/home/aag7319/Homolig/')
+knitr::opts_knit$set(root.dir =  '/home/aag7319/Desktop/Homolig/') #Set to repository parent directory
 library(ggplot2)
 library(ggprism)
 library(scales)

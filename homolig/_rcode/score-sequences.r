@@ -396,7 +396,7 @@ ComparePatternScores2 <- function(inputs, metric = 'ensemble', ALPHA = 0.1, patt
  temp.fun <- function(k){
    GetPatternScores2(k, interpolate_distance = interpolate_distance)$Score
  }
- res =  mclapply(input, mc.cores = 10, FUN = temp.fun)
+ res =  mclapply(input, FUN = temp.fun)
  resmat = as.matrix(bind_rows(res))
  if(nGr > 2){
  kwp =  apply(resmat, 1, FUN = function(r){
@@ -458,7 +458,7 @@ CompareWholePatternScores <-  function(inputs, metric = 'ensemble', ALPHA = 0.1,
   tmp = AverageScoreReport(input[1], metric = metric) #placeholder
   nvar = nrow(tmp) #number of variables 
   
-  res =  mclapply(input, mc.cores = 10, FUN = function(k){AverageScoreReport(k)$mean.score})
+  res =  mclapply(input, FUN = function(k){AverageScoreReport(k)$mean.score})
   resmat = as.matrix(bind_rows(res))
   mag = apply(resmat,1, FUN = function(r){
     spl = split(r, group.labels)
@@ -528,7 +528,7 @@ PlotPatternScoreComparison2 <- function(inputs, metric = 'ensemble', Factors, Po
   temp.fun <- function(k){
     GetPatternScores2(k, interpolate_distance = interpolate_distance)$Score
   }
-  res =  mclapply(input, mc.cores = 10, FUN = temp.fun)
+  res =  mclapply(input, FUN = temp.fun)
   m = t(as.matrix(bind_rows(res)))
   resFactor = tmp$Factor
   resPosition = tmp$Position
@@ -601,7 +601,7 @@ AverageSeqScores <- function(input, metric = 'ensemble'){
   
   input = toupper(input)
   aln = strsplit(input, split = '')
-  scores = mclapply(aln, mc.cores = 10, FUN = function(m){
+  scores = mclapply(aln, FUN = function(m){
     idx = match(m, rownames(pmat))
     out = t(pmat[idx,]) #by residue 
     if(nrow(out)==1) return(as.data.frame(out))

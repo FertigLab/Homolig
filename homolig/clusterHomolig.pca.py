@@ -9,18 +9,19 @@ from time import localtime, strftime
 import warnings
 warnings.filterwarnings("ignore")
 
-import scanpy as sc
+from anndata import read_h5ad
 import pandas as pd
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import silhouette_samples
-
+from sklearn.decomposition import PCA
 #ARGPARSE------------------------------------------------
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-i', '--input', help = "Input .h5ad file")
 parser.add_argument('-c', '--num_clusters', help = "Expected number of clusters. May be any integer.")
 parser.add_argument('-o', '--output',  help = "Desired output file path/filename. Defaults to input file directory.")
+parser.add_argument('-d', '--num_components',  help = "Number of principal components kept for clustering. Defaults to 100.")
 
 #Read arguments from command line.
 args = parser.parse_args()
@@ -30,35 +31,37 @@ if args.input is None:
 if args.num_clusters is None:
     sys.exit('Please specify expected number of groups in data.')
 if args.output is None:
-    args.output = args.input[0:-5] + '_clusters.csv'
+    args.output = args.input[0:-5] + '_' + str(args.num_clusters) + '_clusters.csv'
+if args.num_components is None:
+    args.num_components = 100
 
 #Load in the data /assign variables. ---------------------------------------------
 
 inputfile=args.input
 outputfile=args.output
 C=int(args.num_clusters)
+nPC=int(args.num_components)
 
 now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-print('[' + now + ']', 'Homolig version 0.1 mbkmeans Clustering')  # Find a way to add __version__ attribute to package at later date.
+print('[' + now + ']', 'Homolig version 1.0 mbkmeans Clustering')  # Find a way to add __version__ attribute to package at later date.
 print('                         input_file: ', inputfile)
 print('                        output_file: ', outputfile)
 print('                       num_clusters: ', C)
-
+print('                     num_components: ', nPC)
 
 
 #Execute clustering!--------------------------------------------------------------
 
-adata = sc.read_h5ad(inputfile)
+adata = read_h5ad(inputfile)
 
 x = np.asarray(adata.X.todense())
-
-
-
+pca = PCA(n_components=nPC)
+pca.fit(x)
+P = pca.transform(x)
+print('           Explained Variance Ratio: ', round(sum(pca.explained_variance_ratio_), 4))
 kmeans1 = MiniBatchKMeans(n_clusters = C, random_state = 99, batch_size = 1024, n_init = 10)
 
-
-
-clusters1 = kmeans1.fit_predict(x)
+clusters1 = kmeans1.fit_predict(P)
 
 
 info_list = list(zip( clusters1))

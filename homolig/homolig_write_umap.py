@@ -1,4 +1,4 @@
-
+from time import localtime, strftime
 from sklearn.decomposition import PCA
 from sklearn.decomposition import TruncatedSVD
 from scipy.sparse import csr_matrix
@@ -20,6 +20,13 @@ args = parser.parse_args()
 
 args.input = args.input.replace("'", "")
 args.output = args.output.replace("'", "")
+
+
+now = strftime("%Y-%m-%d %H:%M:%S", localtime())
+print('[' + now + ']', 'Homolig version 1.0 mbkmeans Clustering')  # Find a way to add __version__ attribute to package at later date.
+print('                         input_file: ', args.input)
+print('                        output_file: ', args.output)
+
 
 #Read inputs and calculate UMAP============
 adata = read_h5ad(args.input)
