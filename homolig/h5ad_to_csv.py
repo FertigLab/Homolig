@@ -2,7 +2,7 @@
 import argparse
 from time import localtime, strftime
 import pandas as pd
-import scanpy as sc
+from anndata import read_h5ad
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
@@ -30,13 +30,13 @@ metafile = outfile[:-4] + '_sequence_info.csv'
 
 
 now = strftime("%Y-%m-%d %H:%M:%S", localtime())
-print('[' + now + ']', 'Homolig version 0.2 Write Matrix to CSV')  # Find a way to add __version__ attribute to package at later date.
+print('[' + now + ']', 'Homolig version 1.0 Write Matrix to CSV')  # Find a way to add __version__ attribute to package at later date.
 print('                         input_file: ', infile)
 print('                        output_file: ', outfile)
 print('                          save_meta: ', saveMeta)
 
 
-adata = sc.read_h5ad(infile)
+adata = read_h5ad(infile)
 
 if adata.var.shape[1] > 0: #If we used axb mode to generate input, and input contains both var and obs pd DFs
     mat = pd.DataFrame(adata.X)

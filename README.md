@@ -11,28 +11,28 @@ epitope sequences. There are two modules:
 
 ### Installation
 
-To get a local copy of Homolig up and running follow these simple example steps.
-(Once publicly available, this will be installable directly from pip without the
-need for cloning.) 
-
+The below steps are necessary to use the Homolig clustering module, written in Python3. 
 1. Clone the repository
 ```bash
 git clone https://github.com/FertigLab/Homolig
 ```
-2. Activate a pre-made virtual environment with all homolig dependencies pre-installed (optional, but recommended): 
+2. If using docker: may build local docker image using Dockerfile. Alternatively, install Homolig within a virtual environment. A global installation is not recommended due to several package version dependencies.
+
 ```bash
+#apt install python3-venv  #if not already installed
 cd Homolig 
+python3 -m venv ./homolig-venv
 source ./homolig-venv/bin/activate
-```
-3. Pip install
-```bash
-cd Homolig 
 python3 -m pip install .
 ```
 
+3. Now try using Homolig to cluster example immune repertoires. If successful, output files from this test script will populate the repository parent directory. 
 
+```bash
+# sudo chmod +x ./tests/testcode-python-clustering-module.sh #if you don't have privileges to execute test script
+./tests/testcode-python-clustering-module.sh
+```
 
-You should now be able to import homolig within python. Alternatively, you may call a wrapper script from the terminal as shown below (recommended). 
 
 ## Documentation
 Homolig uses the IMGT/V-QUEST reference directory release 202214-2 (05 April
@@ -40,7 +40,7 @@ Homolig uses the IMGT/V-QUEST reference directory release 202214-2 (05 April
 
 ## File format
 The input file is a comma separated file containing the TCR or BCR CDR3 amino acid sequence and varible
-gene name in IMGT format.   
+gene name in IMGT format. See example inputs in ./test-data/.  
 
 For cases where paired alpha and beta chain information is available:  
 | CDR3.beta.aa | TRBV | CDR3.alpha.aa | TRAV |
@@ -48,7 +48,7 @@ For cases where paired alpha and beta chain information is available:
 | CASSAGTSPTDTQYF | TRBV6-4*01 | CAVMDSSYKLIF | TRAV1-2*01 |
 
 ### Basic Usage: Pairwise Distances
-Recommended usage for Module 1: Pairwise distances is through the wrapper homolig_wrapper.py, located in ./homolig/. 
+Recommended usage for Module 1: Pairwise similarity scores is through the wrapper homolig_wrapper.py, located in ./homolig/. 
 ```python
 python3 $WRAPPERDIR/homolig_wrapper.py  -h
 usage: homolig_wrapper.py [-h] [-i INPUT] [-s SEQ] [-c CHAINS] [-m METRIC] [-sp SPECIES] [-mode MODE] [-i2 INPUT2] [-o OUTPUT] [-v VERBOSE]
@@ -80,7 +80,7 @@ options:
 
 ```
 
-To cluster the results of a Homolig run, you may use the wrapper clusterHomolig.py: 
+To cluster the results of a Homolig run, you may use the wrapper clusterHomolig.py. In the instance of large datasets, you may consider clusterHomolig.pca.py which generates a UMAP using a PCA reduction of the output similarity scores: 
 
 ```python
 python3 $WRAPPERDIR/clusterHomolig.py  -h
@@ -97,7 +97,7 @@ options:
 
 ```
 
-To generate a UMAP reduction based on the NxN distance matrix, you may use the wrapper homolig_write_umap.py: 
+To generate a UMAP reduction based on the NxN similarity matrix, you may use the wrapper homolig_write_umap.py: 
 
 ```python
 python3 $WRAPPERDIR/clusterHomolig.py  -h
@@ -114,11 +114,11 @@ options:
 ```
 ### Basic Usage: Descriptive Module 
 Functions to describe the physiochemical properties of arbitrary sequence groups are written in R. 
-Please see functions in ./homolig/_rcode/score-sequences.r. For a walkthrough of basic usage see testcode-r-characterization-module.rmd. 
+Please see functions in ./homolig/_rcode/score-sequences.r. For a walkthrough of basic usage see ./tests/testcode-r-characterization-module.rmd. 
 
 ## Citation
 
-If you use this software, please cite our manuscript:
+Please see citation information in the CITATION.cff file provided.
 
 <!-- CONTACT -->
 ## Contact
@@ -130,4 +130,4 @@ Please send feedback to Alex Girgis -
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under GPL 3.0. See `LICENSE` for more information.
