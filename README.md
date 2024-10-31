@@ -130,4 +130,4 @@ Please send feedback to Alex Girgis -
 <!-- LICENSE -->
 ## License
 
-Distributed under GPL 3.0. See `LICENSE` for more information.
+Distributed under AGPL 3.0. See `LICENSE` for more information.
