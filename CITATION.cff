@@ -1,9 +1,6 @@
-# This CITATION.cff file was generated with cffinit.
-# Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
-title: Homolig
-message: '  If you use this software, please cite it using the  metadata from this file or cite our manuscript (currently in preparation).'
+title: Homolig - tools for the physiochemical analysis of immune repertoires
+message: 'If you use this software, please cite it using the  metadata from this file.'
 type: software
 authors:
   - given-names: 'Alexander '
@@ -19,4 +16,4 @@ authors:
     family-names: Palmer
     affiliation: Johns Hopkins University
     orcid: 'https://orcid.org/0000-0002-8806-4062'
-license: GPL-3.0
+license: AGPL-3.0
