@@ -118,7 +118,9 @@ Please see functions in ./homolig/_rcode/score-sequences.r. For a walkthrough of
 
 ## Citation
 
-Please see citation information in the CITATION.cff file provided.
+Upon publication, please cite our manuscript, "Comparative Assessment of Physiochemical Metrics for the Clustering of Adaptive Immune Receptor Repertoires" (currently in preparation). For now, please cite this repository. 
+
+Girgis, A., Davis-Marcisak, E., & Palmer, T. Homolig - tools for the physiochemical analysis of immune repertoires [Computer software]
 
 <!-- CONTACT -->
 ## Contact
