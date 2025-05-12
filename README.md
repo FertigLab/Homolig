@@ -79,6 +79,7 @@ options:
                         Save input file after renaming V genes (may be useful in post-analysis).
 
 ```
+Possible arguments for clustering metric include any delimited file placed in the directory ./homolig/data/align-matrices/. This currently corresponds to 13 matrices used in our manuscript, but users may create any arbitrary similarity matrix with a similar file format. 
 
 To cluster the results of a Homolig run, you may use the wrapper clusterHomolig.py. In the instance of large datasets, you may consider clusterHomolig.pca.py which generates a UMAP using a PCA reduction of the output similarity scores: 
 
